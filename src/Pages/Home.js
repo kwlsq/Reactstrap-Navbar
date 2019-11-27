@@ -3,12 +3,16 @@ import {Link} from 'react-router-dom';
 import { Alert } from "reactstrap";
 import Axios from 'axios';
 import {
-    Table,Button, Form
+    Table,Button, Input, Row,DropdownItem
   } from 'reactstrap';
+import Kartu from '../components/cards'
+import CobaDropdown from '../components/dropdown'
 
 class Home extends Component{
     state={
-        data:[]
+        data:[],
+        buah:[],
+        selectedId:null
     }
 
     componentDidMount(){
@@ -24,21 +28,49 @@ class Home extends Component{
     }
 
 
-    renderUserData = () =>{
+    renderUserData = (id) =>{
         return this.state.data.map((val, index)=>{
-            return(
-                <tr>
-                    <td>{index+1}</td>
-                    <td>{val.first_name}</td>
-                    <td>{val.last_name}</td>
-                    <td>{val.email}</td>
-                    <td>
-                        <Button onClick={()=> this.deleteDataSpesifik(val.id)}>Delete</Button> 
-                        <Button onClick={()=> this.editData(val.id)}>Edit</Button>
-                        </td>
-                </tr>
-            )
+            if(this.state.selectedId===val.id){
+                return(
+                    <tr>
+                        <td>{index+1}</td>
+                        <td><Input type='text' placeholder='First Name' innerRef={(editFirstName)=>this.editFirstName=editFirstName}></Input></td>
+                        <td><Input type='text' placeholder='Last Name' innerRef={(editLastName)=>this.editLastName=editLastName}></Input></td>
+                        <td><Input type='text' placeholder='Email' innerRef={(editEmail)=>this.editEmail=editEmail}></Input></td>
+                        <td>
+                            <Button color='danger' onClick={this.cancel}>Cancel</Button> 
+                            <Button color='success' onClick={()=> this.editData(val.id)}>Confirm</Button>
+                            </td>
+                    </tr>
+                )
+            }
+
+                return(
+                    <tr>
+                        <td>{index+1}</td>
+                        <td>{val.first_name}</td>
+                        <td>{val.last_name}</td>
+                        <td>{val.email}</td>
+                        <td>
+                            <Button color='danger' onClick={()=> this.deleteData(val.id)}>Delete</Button> 
+                            <Button color='warning' onClick={()=> this.edit(val.id)}>Edit</Button>
+                            </td>
+                    </tr>
+                )
         })
+    }
+
+    edit=(id)=>{
+        this.setState({selectedId:id})
+        
+    }
+
+    cancel=()=>{
+        this.setState({selectedId:null})
+    }
+    
+    deleteData=(id)=>{
+        this.setState({selectedId:id})
     }
 
     submitData=()=>{
@@ -60,6 +92,35 @@ class Home extends Component{
         })
         .catch((err)=> {
             console.log(err);
+        })
+    }
+
+    editData=(id)=>{
+        var url=`http://localhost:2000/users/${id}`
+        var editFirstName = this.editFirstName.value
+        var editLastName = this.editLastName.value
+        var editEmail = this.editEmail.value
+        
+        if(editFirstName===''){
+            editFirstName=this.state.data[id-1].first_name
+        }
+        if(editLastName===''){
+            editLastName=this.state.data[id-1].last_name
+        }
+        if(editEmail===''){
+            editEmail=this.state.data[id-1].email
+        }
+        Axios.put(url,{
+            first_name:editFirstName,
+            last_name:editLastName,
+            email:editEmail
+        })
+        .then((res)=>{
+            this.componentDidMount()
+            this.setState({selectedId:null})
+        })
+        .catch((err)=>{
+            console.log(err)
         })
     }
 
@@ -86,6 +147,27 @@ class Home extends Component{
         }); 
     }
 
+    renderCard = () => {
+        return this.state.data.map((val) => {
+            return(
+                <Kartu contoh={val.first_name} contoh2={val.last_name} contoh3={val.email}/>
+            )
+        })
+    }
+
+
+    renderDropdown=()=>{
+        return this.state.data.map((val) => {
+            return(
+            <DropdownItem>{val.first_name}</DropdownItem>
+            )
+        })
+    }
+
+
+
+  
+
     render(){
         return(
             <div >
@@ -110,19 +192,31 @@ class Home extends Component{
                         </thead>
                         <tbody >
                             {this.renderUserData()}
+                            
                         </tbody>
-                    </Table>
-                    <Form>
-                    <input type="text" className='form-control' ref='namaDepan'></input>
-                    <input type="text" className='form-control' ref='namaBelakang'></input>
-                    <input type="email" className='form-control' ref='email'></input>
-                    <Button color='primary' onClick={this.submitData}>
-                        Submit
-                    </Button>
-                    <Button color='danger' onClick={this.deleteData}>
-                        Delete
-                    </Button>
-                    </Form>
+                        <tfoot>
+                            <tr>
+                                <td>#</td>
+                                <td><input type="text" className='form-control text-center' ref='namaDepan' placeholder='First Name'></input></td>
+                                <td><input type="text" className='form-control text-center' ref='namaBelakang' placeholder='Last Name'></input></td>
+                                <td><input type="email" className='form-control text-center' ref='email' placeholder='Email'></input></td>
+                                <td>
+                                <Button color='primary' onClick={this.submitData}>
+                                    Submit
+                                </Button>
+                                <Button color='danger' onClick={this.deleteData}>
+                                    Delete
+                                </Button>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </Table>              
+                    <Row>
+                        <CobaDropdown x={this.renderDropdown()}/>
+                    </Row>     
+                    <Row>
+                        {this.renderCard()}
+                    </Row>           
             </div>
         )
     }
